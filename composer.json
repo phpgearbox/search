@@ -1,0 +1,26 @@
+{
+	"name": "gears/search",
+	"description": "A light weight full text search engine.",
+	"homepage": "https://github.com/phpgearbox/search",
+	"keywords": ["search", "engine", "full-text", "lucene", "stemmer"],
+	"license": "MIT",
+	"autoload":
+	{
+		"psr-4":
+		{
+			"Gears\\Search\\": "src"
+		}
+	},
+	"require":
+	{
+		"gears/di":"*",
+		"gears/string": "*",
+		"gears/arrays": "*"
+	},
+	"require-dev":
+	{
+		"phpunit/phpunit": "4.*",
+		"codegyre/robo": "*",
+		"guzzlehttp/guzzle": "4.*"
+	}
+}
