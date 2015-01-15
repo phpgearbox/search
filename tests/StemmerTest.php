@@ -11,10 +11,20 @@
 // -----------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
-class SearchTest extends PHPUnit_Framework_TestCase
+use Gears\Search\TextProcessors\Stemmer;
+
+class StemmerTest extends PHPUnit_Framework_TestCase
 {
-	public function testIndex()
+	public function testStemmer()
 	{
-		// todo
+		$stemmer = new Stemmer();
+
+		$words = file(__DIR__.'/data/words.txt');
+		foreach ($words as $key => $word) $words[$key] = trim($word);
+
+		$stems = file(__DIR__.'/data/stems.txt');
+		foreach ($stems as $key => $stem) $stems[$key] = trim($stem);
+
+		$this->assertEquals($stemmer->process($words), $stems);
 	}
 }
