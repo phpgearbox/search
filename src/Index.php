@@ -19,6 +19,7 @@ use Gears\Search\TextProcessors\Processor;
 use Gears\Search\TextProcessors\Tokenizer;
 use Gears\Search\TextProcessors\StopWords;
 use Gears\Search\TextProcessors\Stemmer;
+use SuperClosure\SerializableClosure;
 
 class Index extends Container
 {
@@ -169,6 +170,55 @@ class Index extends Container
 		{
 			return Arr::a([]);
 		};
+	}
+
+	/**
+	 * Method: __construct
+	 * =========================================================================
+	 * The constructor allows us to import a previously saved index.
+	 * 
+	 * Parameters:
+	 * -------------------------------------------------------------------------
+	 *  - $config: The array that is provided by the save method.
+	 * 
+	 * Returns:
+	 * -------------------------------------------------------------------------
+	 * void
+	 */
+	public function __construct($config = [])
+	{
+		parent::__construct($config);
+
+		// Do we need unserialize an already generated index
+		// We can test the provided config, if it is a simple PHP array we need
+		// to perform the unserlization process because all our injected
+		// properties should be Gears\Arrays\Fluent objects.
+		if (is_array($this->schema))
+		{
+			$this->schema = Arr::a($this->schema);
+		}
+
+		if (is_array($this->documents))
+		{
+			$this->documents = Arr::a($this->documents);
+		}
+
+		if (is_array($this->tokens))
+		{
+			$this->tokens = Arr::a($this->tokens);
+		}
+
+		if (is_array($this->pipeline))
+		{
+			$new_pipeline = Arr::a([]);
+
+			foreach ($this->pipeline as $sleeping_processor)
+			{
+				$new_pipeline[] = unserialize($sleeping_processor);
+			}
+
+			$this->pipeline = $new_pipeline;
+		}
 	}
 
 	/**
@@ -341,6 +391,8 @@ class Index extends Container
 	 * Parameters:
 	 * -------------------------------------------------------------------------
 	 *  - $query: A string to search the index with.
+	 * 	- $offset: How many results to ignore from the start of the result set.
+	 * 	- $limit: How many results in total to return.
 	 * 
 	 * Returns:
 	 * -------------------------------------------------------------------------
@@ -356,7 +408,9 @@ class Index extends Container
 		$query = $this->runPipe($query);
 
 		// Lets check to see if we have any matches at all.
-		if (count(array_intersect($this->tokens->keys(), array_keys($query))) == 0)
+		$all_tokens = $this->tokens->keys();
+		$query_tokens = array_keys($query);
+		if (count(array_intersect($all_tokens, $query_tokens)) == 0)
 		{
 			return $matches;
 		}
@@ -383,7 +437,7 @@ class Index extends Container
 			}
 		}
 
-		// Now normalise the scores for length
+		// Now normalise the scores for document length
 		foreach($matches as $ref => $score)
 		{
 			$matches[$ref] =
@@ -402,10 +456,65 @@ class Index extends Container
 	}
 
 	/**
+	 * Method: save
+	 * =========================================================================
+	 * Because generating the index can be a time consuming task you can use
+	 * this method to save the index in it's current state, which will then
+	 * allow you to implement a cache in your application.
+	 * 
+	 * Parameters:
+	 * -------------------------------------------------------------------------
+	 * n/a
+	 * 
+	 * Returns:
+	 * -------------------------------------------------------------------------
+	 * array
+	 */
+	public function save()
+	{
+		// Get the easy ones done first
+		$export =
+		[
+			'schema' => $this->schema->toArray(),
+			'documents' => $this->documents->toArray(),
+			'tokens' => $this->tokens->toArray(),
+			'pipeline' => []
+		];
+
+		// The pipeline is slightly more involved to serialize.
+		foreach ($this->pipeline as $processor)
+		{
+			if (is_object($processor) && $processor instanceof Processor)
+			{
+				$export['pipeline'][] = serialize($processor);
+			}
+			elseif (is_object($processor) && $processor instanceof Closure)
+			{
+				$export['pipeline'][] = \SuperClosure\serialize
+				(
+					$processor,
+					'turbo_mode'
+				);
+			}
+			elseif (is_object($processor) && $processor instanceof SerializableClosure)
+			{
+				$export['pipeline'][] = serialize($processor);
+			}
+			else
+			{
+				throw new RuntimeException('Processor not supported!');
+			}
+		}
+
+		// Return the index in a serialized state
+		return $export;
+	}
+
+	/**
 	 * Method: calcTfIdf
 	 * =========================================================================
-	 * This is how we rank the results. Its some complicated mathametics that
-	 * my poor head still struggles to full understand.
+	 * This is how we rank the results. Its some complicated mathematics
+	 * that my poor head still struggles to fully understand.
 	 * 
 	 * For more info see:
 	 * 	- http://en.wikipedia.org/wiki/Tf%E2%80%93idf
@@ -540,7 +649,7 @@ class Index extends Container
 			{
 				$input = $processor->process($input);
 			}
-			elseif (is_object($processor) && $processor instanceof Closure)
+			elseif (is_object($processor) && ($processor instanceof Closure || $processor instanceof SerializableClosure))
 			{
 				$input = call_user_func($processor, $input);
 			}

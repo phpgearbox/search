@@ -14,8 +14,8 @@
 	"require":
 	{
 		"gears/di":"*",
-		"gears/string": "*",
-		"gears/arrays": "*"
+		"gears/arrays": "*",
+		"brad-jones/superclosure": "2.0"
 	},
 	"require-dev":
 	{

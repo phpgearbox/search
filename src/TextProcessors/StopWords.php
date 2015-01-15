@@ -15,6 +15,7 @@ use Gears\Search\TextProcessors\Processor;
 
 class StopWords implements Processor
 {
+	// This list came from: http://git.io/T37UJA
 	private $words =
 	[
 		'', 'a', 'able', 'about', 'across', 'after', 'all', 'almost', 'also',

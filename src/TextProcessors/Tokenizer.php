@@ -17,17 +17,26 @@ class Tokenizer implements Processor
 {
 	public function process($input)
 	{
-		// First remove all un-needed whitespace
-		$input = preg_replace('/\s+/', ' ', $input);
-
 		// Make everything lowercase
 		$input = strtolower($input);
 
-		// Remove any html tags
+		// Strip tags isn't smart enough to remove script blocks
+		$input = preg_replace('#<script(.*?)>(.*?)</script>#is', ' ', $input);
+
+		// Remove all other html tags
 		$input = strip_tags($input);
 
-		// Remove any remaining special characters, we want english words only.
-		$input = preg_replace('/[^A-Za-z0-9\-\s]/', '', $input);
+		// Decode HTML entities
+		$input = html_entity_decode($input);
+
+		// Remove all un-needed whitespace
+		$input = preg_replace('/\s+/', ' ', $input);
+
+		// Remove any remaining special characters.
+		// This is so that in both the following examples:
+		// "Hello Bob." and "Hello Bob!" we still only get
+		// 2 tokens "hello" and "bob" not "hello", "bob." & "bob!"
+		$input = preg_replace('/[^A-Za-z0-9\s]/', '', $input);
 
 		// Return an array of words
 		return explode(' ', $input);

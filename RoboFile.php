@@ -41,28 +41,4 @@ class RoboFile extends Robo\Tasks
 	{
 		$this->taskPHPUnit()->arg('./tests')->run();
 	}
-
-	public function example()
-	{
-		$index = new Gears\Search\Index();
-		$index->schema->push(['name' => 'title', 'boost' => 10]);
-		$index->schema->push(['name' => 'body']);
-
-		$index->add
-		([
-			'id' => 1,
-			'title' => 'Foo',
-			'body' => 'Foo foo   <br /> <b<dsfhgfdsG>>sdkjhfsdkg</b>  '."\n\n".' foo!'
-		]);
-
-		$index->add
-		([
-			'id' => 2,
-			'title' => 'Bar',
-			'body' => 'Bar bar bar ho hum! really real go going some something cook cooking purposeful foo Bar bar bar ho hum! really real go going some something cook cooking purposeful foo'
-		]);
-		
-		print_r($index->search('how to cook real bar pie while cooking banna foo'));
-	}
-
 }
